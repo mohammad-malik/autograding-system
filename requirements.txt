@@ -1,2 +1,9 @@
-supabase
-mistralai
+fastapi
+uvicorn
+passlib[bcrypt]
+PyJWT
+pydantic
+pydantic-settings
+python-multipart
+pytest
+httpx

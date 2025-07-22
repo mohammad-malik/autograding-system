@@ -82,7 +82,10 @@ Educators spend excessive time on manual tasks:
 - Peer-to-peer learning features
 
 ## Getting Started
-*Instructions for setup and deployment will be added in future releases.*
+To run the backend locally:
+1. Create a virtual environment and install `requirements.txt`.
+2. Copy `.env.example` to `.env` and fill in values.
+3. Start the API with `uvicorn app.main:app --reload`.
 
 ## License
 *To be specified.*
