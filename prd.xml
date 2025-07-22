@@ -1,0 +1,496 @@
+<product_requirements_document>
+    <metadata>
+        <project_title>AI-Powered Educational System for Content Generation and Automated Grading</project_title>
+        <version>1.0</version>
+        <date>2025-07-22</date>
+        <author>Eynvision</author>
+    </metadata>
+
+    <project_overview>
+        This project proposes the development of a comprehensive AI-powered educational system designed to significantly reduce teachers' workload in content creation and student quiz grading. It features two core modules: one for generating educational content (slides, quizzes) from uploaded textbook PDFs using Large Language Models (LLMs) and a vector database, and another for automatically grading handwritten student quiz responses via Optical Character Recognition (OCR) and LLM-based comparison. The system aims to provide faster feedback to students, ensure uniform grading, and improve overall educational efficiency through an intuitive web interface.
+    </project_overview>
+
+    <problem_statement>
+        The core problem addressed is the inefficient use of educator time due to manual, repetitive tasks, specifically:
+        1.  **Content Creation Challenges**: Educators spend 3-8 hours per lecture preparing content, including structuring slides, designing visuals, drafting notes, and crafting quizzes. Quality of content can fluctuate, and extracting/reformatting textbook material is time-consuming.
+        2.  **Assessment and Grading Issues**: Handwritten quiz grading is highly time-consuming (2-3 minutes per student), leading to week-long delays in large classes (100+ students). Grading consistency varies, and providing detailed, timely feedback is challenging, which slows the student learning process.
+        3.  **Resource Constraints**: Limited teaching assistant availability and pressure to manage increasing class sizes with existing staff necessitate scalable solutions that maintain educational quality.
+        This inefficiency impacts academic staff productivity, student learning outcomes due to delayed feedback, and overall institutional scalability.
+    </problem_statement>
+
+    <goals_objectives>
+        <goal>
+            <name>Primary Aim: Develop and Deploy User-Friendly AI System</name>
+            <description>To develop and deploy a user-friendly AI system that automates educational content creation and handwritten quiz grading, targeting a 60-70% reduction in teacher workload while maintaining educational quality and providing faster student feedback.</description>
+        </goal>
+
+        <objective>
+            <name>Objective 3.2.1: Book Processing and Storage System</name>
+            <description>Develop a robust system for processing and storing textbook PDFs, including PDF upload, text extraction, content chunking, and storage as searchable embeddings in a Pinecone vector database, preserving chapter structure.</description>
+        </objective>
+        <objective>
+            <name>Objective 3.2.2: AI-Powered Content Generation</name>
+            <description>Integrate LLMs (GPT-4o or similar) to enable teachers to generate PowerPoint slides and multi-type quizzes from vectorized textbook content via simple prompts, with export functionality to .pptx and .docx formats.</description>
+        </objective>
+        <objective>
+            <name>Objective 3.2.3: Handwritten Quiz Processing</name>
+            <description>Develop an image upload system for handwritten quiz photos, implement OCR (MistralOCR OR Google Cloud Vision API/TrOCR) for converting handwriting to digital text, incorporate image preprocessing for accuracy, and build confidence scoring for human review.</description>
+        </objective>
+        <objective>
+            <name>Objective 3.2.4: AI-Driven Grading System</name>
+            <description>Create an Reasoning LLM-based (o4-mini or equivalent) system for comparing OCR'd student answers with TA-provided answer keys, performing intelligent context-aware grading with partial credit, and generating detailed feedback.</description>
+        </objective>
+        <objective>
+            <name>Objective 3.2.5: Reporting and Analytics</name>
+            <description>Generate individual student reports (scores, correct answers, feedback) and class-wide analytics, with downloadable PDF reports and an email notification system.</description>
+        </objective>
+        <objective>
+            <name>Objective 3.3.1: User Interface Development</name>
+            <description>Design and develop a simple, mobile-responsive web interface with separate dashboards for teachers, TAs, and students, incorporating user authentication and role-based access control.</description>
+        </objective>
+        <objective>
+            <name>Objective 3.3.2: System Performance and Reliability</name>
+            <description>Ensure high system performance with content generation under 5 minutes and quiz grading within 24 hours, achieving 99.5% system uptime with robust backup and recovery.</description>
+        </objective>
+    </goals_objectives>
+
+    <target_audience_users>
+        <user_group>
+            <name>Teachers and Educators</name>
+            <description>Primary end-users who will use the system for content creation (slides, quizzes) and overseeing automated grading. Their needs include reducing preparation time, maintaining consistent grading, and generating performance analytics. They require an intuitive, non-technical interface.</description>
+        </user_group>
+        <user_group>
+            <name>Students</name>
+            <description>Recipients of educational content and graded feedback. Their needs include receiving timely feedback (within 24 hours), detailed explanations for mistakes, access to well-structured study materials, and consistent grading across assignments.</description>
+        </user_group>
+        <user_group>
+            <name>Teaching Assistants (TAs)</name>
+            <description>Users who will input correct answer keys and potentially review flagged unclear handwriting or AI grades. Their primary need is to significantly reduce their manual grading workload (target 80-90% reduction) to focus on higher-value tasks.</description>
+        </user_group>
+        <user_group>
+            <name>Educational Institutions</name>
+            <description>Organizational stakeholders benefiting from improved teacher efficiency, ability to handle larger class sizes without additional staff, reduced operational costs, improved student satisfaction, and data-driven insights for curriculum improvement.</description>
+        </user_group>
+    </target_audience_users>
+
+    <solution_description>
+        The AI-powered educational system is structured around two main modules, accessible via a user-friendly web interface.
+        **Module 1: Content Generation**
+        Teachers upload academic textbook PDFs to the system. A Python backend processes these PDFs by extracting text, chunking content into manageable sections, and converting these sections into high-dimensional vector embeddings using the OpenAI `text-embedding-3-small` model. These embeddings are then stored in a Pinecone vector database. When a teacher needs content (e.g., "create slides for Vision Transformer" or "make a quiz on Vision Transformer"), they provide a simple prompt through the web interface. The Python backend performs a similarity search in Pinecone to retrieve the most relevant textbook content. This retrieved content serves as context for the OpenAI GPT-4o/4.1 API (or similar LLM), which then generates the requested PowerPoint slides or multi-format quizzes. The generated content can be exported as .pptx or .docx files.
+
+        **Module 2: Quiz Grading**
+        Students submit photos of their handwritten quiz responses via the web interface. The Python backend utilizes MistralOCR (or Google Cloud Vision OCR) to perform Optical Character Recognition (OCR), converting the handwritten material into markdown text. Image preprocessing is applied to enhance OCR accuracy. Concurrently, Teaching Assistants (TAs) input the correct answer keys for the quizzes through a dedicated interface. The system then uses a reasoning LLM (OpenAI o4-mini or Deepseek R1 or Gemini 2.5 Pro/Flash or Claude) to compare the OCR'd student responses with the correct answers. This LLM-based comparison is designed to understand context, not just exact word matches, and to assign partial credit appropriately, as well as make use of Chain-of-Thought to enhance LLM understanding of the question and of the student answer. Post-grading, the system automatically generates personalized reports for each student, displaying their marks, correct answers, and personalized comments provided by the LLM. Class-wide analytics and downloadable PDF reports are also available, with options for email distribution.
+
+        The entire workflow is managed by a Python FastAPI backend, providing robust API endpoints, integrated with a React.js frontend for a seamless user experience. User authentication and role-based access ensure secure and appropriate interaction for teachers, TAs, and students.
+    </solution_description>
+
+    <key_features>
+        <feature>
+            <name>Content Generation: PDF Processing & Vector Storage</name>
+            <description>Enables teachers to upload textbook PDFs. The system will automatically extract text, divide it into coherent chunks, generate vector embeddings using a dedicated embedding model, and store these embeddings in a Pinecone vector database. This process indexes content while preserving its original structure and relationships, making it searchable for content generation.</description>
+            <llm_interaction_details>
+                Utilizes OpenAI's `text-embedding-3-small` model (or Sentence-BERT as backup) to convert text chunks into vector embeddings. The LLM's role here is solely for embedding generation, not content generation. Input: Raw text chunks from PDF. Output: Numerical vector representations of text.
+            </llm_interaction_details>
+            <python_component_details>
+                Custom Python modules will handle PDF parsing calling MistralOCR to convert PDF content into text, text chunking logic (e.g., `LangChain` text splitters), and interaction with the Pinecone client library (`pinecone-client`) for upserting and indexing embeddings. File upload handling will be managed by FastAPI routes.
+            </python_component_details>
+            <api_endpoint_details>
+                <endpoint>
+                    <path>/api/v1/content/upload_textbook</path>
+                    <method>POST</method>
+                    <description>Allows teachers to upload textbook PDF files for processing and vectorization.</description>
+                    <request_body_schema>{ "file": "binary_pdf_data" }</request_body_schema>
+                    <response_body_schema>{ "message": "Textbook processed and indexed successfully", "book_id": "string" }</response_body_schema>
+                    <authentication_authorization>Requires teacher role authentication (JWT).</authentication_authorization>
+                </endpoint>
+            </api_endpoint_details>
+        </feature>
+        <feature>
+            <name>Content Generation: AI-Powered Slide Generation</name>
+            <description>Allows teachers to generate PowerPoint slide decks based on simple text prompts (e.g., "Create 15 slides on Vision Transformer"). The system retrieves relevant context from the vector database and uses an LLM to generate structured content suitable for slides, including titles, bullet points, and speaker notes, with proper formatting. Supports export to .pptx.</description>
+            <llm_interaction_details>
+                Uses OpenAI GPT-4o/4.1 (or Google Gemini or Anthropic Claude as backup) for sophisticated text generation. Input: Teacher's prompt, retrieved contextual text from Pinecone. Output: Formatted text (e.g., JSON or markdown) representing slide content (title, sections, bullet points, summary), which is then converted into a .pptx file.
+            </llm_interaction_details>
+            <python_component_details>
+                Python components will include Pinecone client for semantic search, LLM API client (`openai` or `anthropic` libraries) for content generation, and `python-pptx` for programmatically creating and formatting PowerPoint files. Logic for structuring LLM output into slides will be implemented here.
+            </python_component_details>
+            <api_endpoint_details>
+                <endpoint>
+                    <path>/api/v1/content/generate_slides</path>
+                    <method>POST</method>
+                    <description>Generates a PowerPoint presentation based on a user prompt and textbook context.</description>
+                    <request_body_schema>{ "prompt": "string", "book_id": "string", "num_slides": "integer" }</request_body_schema>
+                    <response_body_schema>{ "message": "Slide generation initiated", "task_id": "string", "download_url": "string (once complete)" }</response_body_schema>
+                    <authentication_authorization>Requires teacher role authentication (JWT).</authentication_authorization>
+                </endpoint>
+            </api_endpoint_details>
+        </feature>
+        <feature>
+            <name>Content Generation: AI-Powered Quiz Generation</name>
+            <description>Enables teachers to generate quizzes with multiple question types (e.g., multiple choice, short answer, true/false) from textbook content using specific prompts. The LLM will craft questions and appropriate answer choices/schemes. Supports export to .docx.</description>
+            <llm_interaction_details>
+                Uses OpenAI GPT-4o/4.1 (or Google Gemini or Anthropic Claude as backup) to generate various question types and their corresponding answers. Input: Teacher's prompt (specifying topic, question types, difficulty), retrieved contextual text from Pinecone. Output: Structured text (e.g., JSON) containing questions, answer options, and correct answers.
+            </llm_interaction_details>
+            <python_component_details>
+                Similar to slide generation, Python modules will integrate Pinecone, LLM API client, and `python-docx` for creating Word documents. Specific logic for handling different question formats and answer key generation will be implemented.
+            </llm_component_details>
+            <api_endpoint_details>
+                <endpoint>
+                    <path>/api/v1/content/generate_quiz</path>
+                    <method>POST</method>
+                    <description>Generates a quiz based on user prompt, topic, and desired question types.</description>
+                    <request_body_schema>{ "prompt": "string", "book_id": "string", "question_types": ["string"], "difficulty": "string" }</request_body_schema>
+                    <response_body_schema>{ "message": "Quiz generation initiated", "task_id": "string", "download_url": "string (once complete)" }</response_body_schema>
+                    <authentication_authorization>Requires teacher role authentication (JWT).</authentication_authorization>
+                </endpoint>
+            </api_endpoint_details>
+        </feature>
+        <feature>
+            <name>Quiz Assessment: Handwritten Quiz Processing (OCR)</name>
+            <description>Facilitates students uploading photos of their handwritten quiz responses. The system preprocesses these images (e.g., de-skew, contrast adjustment) to improve recognition accuracy, then uses MistralOCR as OCR technology to convert the handwriting into digital text. It also provides a confidence score to flag entries that might require human review due to unclear handwriting.</description>
+            <llm_interaction_details>
+                No direct LLM interaction for OCR itself. The output of OCR (digital text) serves as the primary input for the subsequent LLM-driven grading feature.
+            </llm_interaction_details>
+            <python_component_details>
+                Python will utilize MistralOCR will be integrated for the primary OCR service, with fallback logic for TrOCR or Google Cloud Vision API client library (`google-cloud-vision`), or alternative (potentially using a local model or a self-hosted API).
+            </python_component_details>
+            <api_endpoint_details>
+                <endpoint>
+                    <path>/api/v1/quiz/upload_response</path>
+                    <method>POST</method>
+                    <description>Allows students to upload images of their handwritten quiz responses for OCR processing.</description>
+                    <request_body_schema>{ "quiz_id": "string", "student_id": "string", "image": "binary_image_data" }</request_body_schema>
+                    <response_body_schema>{ "message": "Response uploaded and OCR initiated", "submission_id": "string", "ocr_status": "string" }</response_body_schema>
+                    <authentication_authorization>Requires student role authentication (JWT).</authentication_authorization>
+                </endpoint>
+            </api_endpoint_details>
+        </feature>
+        <feature>
+            <name>Quiz Assessment: AI-Driven Grading System</name>
+            <description>Allows Teaching Assistants (TAs) to input correct answer keys for quizzes. The system then uses an LLM to compare the OCR'd student answers with the correct answers. This intelligent grading system understands context, not just exact word matches, assigns appropriate partial credit, and flags potentially ambiguous answers for human review.</description>
+            <llm_interaction_details>
+                Uses OpenAI GPT-4o/4.1 (or similar) for natural language understanding, semantic comparison, and assessment. Input: OCR'd student answer text, question text, correct answer key, grading rubric (if provided). Output: Assigned score, justification for the score, and personalized feedback/comments.
+            </llm_interaction_details>
+            <python_component_details>
+                Python backend will handle the parsing of TA-provided answer keys, orchestration of LLM calls for each student response, and implementation of scoring algorithms (e.g., comparison of semantic similarity, keyword matching, logical flow assessment based on LLM output). Error handling for LLM responses and confidence thresholds for human review will be managed.
+            </python_component_details>
+            <api_endpoint_details>
+                <endpoint>
+                    <path>/api/v1/quiz/submit_answer_key</path>
+                    <method>POST</method>
+                    <description>Allows TAs to submit the correct answer key for a specific quiz.</description>
+                    <request_body_schema>{ "quiz_id": "string", "answer_key": [{ "question_id": "string", "correct_answer": "string", "keywords": ["string"] }] }</request_body_schema>
+                    <response_body_schema>{ "message": "Answer key submitted successfully" }</response_body_schema>
+                    <authentication_authorization>Requires TA role authentication (JWT).</authentication_authorization>
+                </endpoint>
+                <endpoint>
+                    <path>/api/v1/quiz/grade_submission</path>
+                    <method>POST</method>
+                    <description>Triggers the AI grading process for a specific student's quiz submission.</description>
+                    <request_body_schema>{ "submission_id": "string", "quiz_id": "string" }</request_body_schema>
+                    <response_body_schema>{ "message": "Grading initiated", "grade_status": "string" }</response_body_schema>
+                    <authentication_authorization>Requires TA/Teacher role authentication (JWT).</authentication_authorization>
+                </endpoint>
+            </api_endpoint_details>
+        </feature>
+        <feature>
+            <name>Quiz Assessment: Reporting and Analytics</name>
+            <description>Generates comprehensive individual student reports detailing scores, correct answers, and personalized comments from the AI grading. Also provides class-wide analytics, identifying common mistakes and performance trends. Reports are downloadable in PDF format, and an email notification system allows for automatic distribution to students and teachers.</description>
+            <llm_interaction_details>
+                The personalized comments included in student reports are generated by the LLM during the AI-driven grading process. The LLM does not directly generate the report layout or overall analytics, but its output is a key component of the report content.
+            </llm_interaction_details>
+            <python_component_details>
+                Python will use libraries like `ReportLab` or `fpdf` for PDF generation, data manipulation libraries (`Pandas`) for aggregating and analyzing class-wide performance, and an email sending library (`smtplib` or a third-party service client) for notifications.
+            </python_component_details>
+            <api_endpoint_details>
+                <endpoint>
+                    <path>/api/v1/reports/student/{submission_id}</path>
+                    <method>GET</method>
+                    <description>Retrieves a specific student's grading report.</description>
+                    <request_body_schema>N/A (parameters in path)</request_body_schema>
+                    <response_body_schema>{ "student_name": "string", "score": "integer", "feedback": "string", "correct_answers": "object", "download_pdf_url": "string" }</response_body_schema>
+                    <authentication_authorization>Requires student (for their own), TA, or Teacher role authentication (JWT).</authentication_authorization>
+                </endpoint>
+                <endpoint>
+                    <path>/api/v1/reports/class_summary/{quiz_id}</path>
+                    <method>GET</method>
+                    <description>Retrieves class-wide performance summary and analytics for a specific quiz.</description>
+                    <request_body_schema>N/A (parameters in path)</request_body_schema>
+                    <response_body_schema>{ "quiz_name": "string", "avg_score": "float", "common_mistakes": ["string"], "performance_trends": "object", "download_pdf_url": "string" }</response_body_schema>
+                    <authentication_authorization>Requires TA or Teacher role authentication (JWT).</authentication_authorization>
+                </endpoint>
+            </api_endpoint_details>
+        </feature>
+        <feature>
+            <name>User Interface and Access Control</name>
+            <description>Provides a simple, intuitive web interface designed to require no technical expertise. Features separate dashboards for teachers, TAs, and students, with robust user authentication (JWT) and role-based access control to ensure data security and appropriate feature visibility. The design will be mobile-responsive for accessibility on various devices.</description>
+            <llm_interaction_details>
+                Indirectly interacts by exposing the LLM-powered features through user-friendly forms and displaying LLM-generated content. No direct LLM calls from the UI itself, rather through the backend API.
+            </llm_interaction_details>
+            <python_component_details>
+                The FastAPI backend will expose authentication endpoints (`/auth/login`), manage user roles in the PostgreSQL database (through Supabase), and implement JWT generation and validation for all protected API routes.
+            </python_component_details>
+            <api_endpoint_details>
+                <endpoint>
+                    <path>/api/v1/auth/login</path>
+                    <method>POST</method>
+                    <description>Authenticates a user and returns a JWT token for subsequent requests.</description>
+                    <request_body_schema>{ "username": "string", "password": "string" }</request_body_schema>
+                    <response_body_schema>{ "access_token": "string", "token_type": "bearer", "user_role": "string" }</response_body_schema>
+                    <authentication_authorization>None (public endpoint for initial login).</authentication_authorization>
+                </endpoint>
+                <endpoint>
+                    <path>/api/v1/auth/register</path>
+                    <method>POST</method>
+                    <description>Registers a new user account (assuming institution-controlled or invite-based registration).</description>
+                    <request_body_schema>{ "username": "string", "password": "string", "email": "string", "role": "string" }</request_body_schema>
+                    <response_body_schema>{ "message": "User registered successfully", "user_id": "string" }</response_body_schema>
+                    <authentication_authorization>Admin or Teacher registration is assumed to be handled by institution or invitation system.</authentication_authorization>
+                </endpoint>
+            </api_endpoint_details>
+        </feature>
+    </key_features>
+
+    <technical_specifications>
+        <architecture_overview>
+            The system will follow a microservices-oriented architecture deployed on AWS. The core components include:
+            1.  **Frontend (React.js)**: A Single Page Application (SPA) providing the user interface for Teachers, TAs, and Students.
+            2.  **Backend API (FastAPI)**: A Python-based RESTful API serving as the central hub, handling all business logic, data processing, and orchestrating interactions with AI services and databases.
+            3.  **LLM Service Integration**: External APIs like OpenAI (GPT-4o/4.1, text-embedding-3-small) and Anthropic (Claude) for content generation, quiz creation, and intelligent grading.
+            4.  **OCR Service Integration**: External APIs like MistralOCR or Google Cloud Vision for handwritten text recognition, with an optional fallback to a self-hosted TrOCR model.
+            5.  **Vector Database (Pinecone)**: Dedicated for storing and querying textbook content embeddings for efficient semantic search.
+            6.  **Traditional Database (Supabase + PostgreSQL)**: Stores structured data such as user accounts, quiz metadata, student grades, system logs, and configuration.
+            7.  **Supabase Storage**: For storing raw uploaded PDFs, image files, and generated output reports/slides/quizzes.
+            **Data Flow**: User interaction via Frontend -> API Gateway (FastAPI) -> Backend services (Python) -> LLM/OCR APIs, Pinecone, Supabase + PostgreSQL, Supabase Storage. Results return through the same path to the Frontend.
+        </architecture_overview>
+        <technology_stack>
+            <programming_languages>Python (3.10+ for backend), JavaScript (for React.js frontend)</programming_languages>
+            <llm_models_apis>OpenAI GPT-4o/4.1 API (primary for generation/grading), OpenAI text-embedding-3-small (primary for embeddings), Google Gemini or Anthropic Claude API (backup for generation), Sentence-BERT (alternative for embeddings).</llm_models_apis>
+            <frameworks_libraries>
+                **Python Backend**: FastAPI, Uvicorn, SQLAlchemy (or similar ORM for PostgreSQL), MistralOCR (for PDF parsing), pinecone-client, openai, anthropic, python-pptx, python-docx, PyJWT (for authentication), pytest (for testing).
+                **JavaScript Frontend**: React.js, Redux (for state management - assumption), Axios (for API calls - assumption), Bootstrap CSS.
+            </frameworks_libraries>
+            <database_storage>
+                **Vector Database**: Pinecone (for textbook embeddings).
+                **Traditional Database**: PostgreSQL (for user accounts, quiz metadata, student submissions, grades, system logs).
+                **Cloud Storage**: Amazon S3 (for raw PDF uploads, handwritten image files, generated reports, slides, quizzes).
+            </database_storage>
+            <deployment_environment>
+                Amazon Web Services (AWS) using EC2 or GCP or custom VPS for compute instances, Supabase for PostgreSQL, Supabase Storage for storage. Docker for containerization of the FastAPI application. Auto-scaling groups for elasticity. Potential use of AWS Lambda for asynchronous tasks (e.g., PDF processing, background grading).
+            </deployment_environment>
+            <version_control>Git/GitHub for source code management.</version_control>
+        </technology_stack>
+        <api_endpoints_details>
+            <endpoint>
+                <path>/api/v1/auth/login</path>
+                <method>POST</method>
+                <description>Authenticates a user with username and password, returning a JWT access token and user role.</description>
+                <request_body_schema>{"username": "string", "password": "string"}</request_body_schema>
+                <response_body_schema>{"access_token": "string", "token_type": "bearer", "user_role": "string"}</response_body_schema>
+                <authentication_authorization>None (public endpoint).</authentication_authorization>
+            </endpoint>
+            <endpoint>
+                <path>/api/v1/content/upload_textbook</path>
+                <method>POST</method>
+                <description>Uploads a PDF textbook for text extraction, chunking, and embedding in Pinecone.</description>
+                <request_body_schema>{"file": "binary_pdf_data"}</request_body_schema>
+                <response_body_schema>{"message": "Textbook processed and indexed successfully", "book_id": "string"}</response_body_schema>
+                <authentication_authorization>Requires valid JWT with 'teacher' role.</authentication_authorization>
+            </endpoint>
+            <endpoint>
+                <path>/api/v1/content/generate_slides</path>
+                <method>POST</method>
+                <description>Generates a PowerPoint presentation based on a user prompt and content from a specified textbook.</description>
+                <request_body_schema>{"prompt": "string", "book_id": "string", "num_slides": "integer"}</request_body_schema>
+                <response_body_schema>{"message": "Slide generation initiated", "task_id": "string", "download_url": "string (once complete)"}</response_body_schema>
+                <authentication_authorization>Requires valid JWT with 'teacher' role.</authentication_authorization>
+            </endpoint>
+            <endpoint>
+                <path>/api/v1/content/generate_quiz</path>
+                <method>POST</method>
+                <description>Generates a quiz (MCQ, short answer, T/F) based on a user prompt, textbook, question types, and difficulty.</description>
+                <request_body_schema>{"prompt": "string", "book_id": "string", "question_types": ["string"], "difficulty": "string"}</request_body_schema>
+                <response_body_schema>{"message": "Quiz generation initiated", "task_id": "string", "download_url": "string (once complete)"}</response_body_schema>
+                <authentication_authorization>Requires valid JWT with 'teacher' role.</authentication_authorization>
+            </endpoint>
+            <endpoint>
+                <path>/api/v1/quiz/upload_response</path>
+                <method>POST</method>
+                <description>Uploads a handwritten quiz response image for OCR processing.</description>
+                <request_body_schema>{"quiz_id": "string", "student_id": "string", "image": "binary_image_data"}</request_body_schema>
+                <response_body_schema>{"message": "Response uploaded and OCR initiated", "submission_id": "string"}</response_body_schema>
+                <authentication_authorization>Requires valid JWT with 'student' role.</authentication_authorization>
+            </endpoint>
+            <endpoint>
+                <path>/api/v1/quiz/submit_answer_key</path>
+                <method>POST</method>
+                <description>Submits the correct answer key for a specific quiz.</description>
+                <request_body_schema>{"quiz_id": "string", "answer_key": [{"question_id": "string", "correct_answer": "string", "keywords": ["string"]}]}</request_body_schema>
+                <response_body_schema>{"message": "Answer key submitted successfully"}</response_body_schema>
+                <authentication_authorization>Requires valid JWT with 'ta' or 'teacher' role.</authentication_authorization>
+            </endpoint>
+            <endpoint>
+                <path>/api/v1/quiz/grade_submission/{submission_id}</path>
+                <method>POST</method>
+                <description>Triggers the AI grading process for a specific student's quiz submission using the provided answer key.</description>
+                <request_body_schema>N/A (triggers server-side background task)</request_body_schema>
+                <response_body_schema>{"message": "Grading initiated", "grade_status": "string"}</response_body_schema>
+                <authentication_authorization>Requires valid JWT with 'ta' or 'teacher' role.</authentication_authorization>
+            </endpoint>
+            <endpoint>
+                <path>/api/v1/reports/student/{student_id}/{quiz_id}</path>
+                <method>GET</method>
+                <description>Retrieves the detailed grading report for a specific student and quiz.</description>
+                <request_body_schema>N/A (parameters in path)</request_body_schema>
+                <response_body_schema>{"student_name": "string", "score": "float", "feedback": "string", "correct_answers": "object", "submitted_answer_ocr": "string", "download_pdf_url": "string"}</response_body_schema>
+                <authentication_authorization>Requires valid JWT with 'student' (for own report), 'ta', or 'teacher' role.</authentication_authorization>
+            </endpoint>
+            <endpoint>
+                <path>/api/v1/reports/class_summary/{quiz_id}</path>
+                <method>GET</method>
+                <description>Retrieves aggregated analytics and performance trends for a specific quiz across the class.</description>
+                <request_body_schema>N/A (parameters in path)</request_body_schema>
+                <response_body_schema>{"quiz_name": "string", "average_score": "float", "common_mistakes": ["string"], "student_performance_distribution": "object", "download_pdf_url": "string"}</response_body_schema>
+                <authentication_authorization>Requires valid JWT with 'ta' or 'teacher' role.</authentication_authorization>
+            </endpoint>
+        </api_endpoints_details>
+        <data_requirements>
+            **Input Data Sources**:
+            *   **Educational Textbooks**: Digital PDF versions (minimum 300 DPI scans) of academic textbooks, initially targeting 2 textbooks for Machine Learning and Deep Learning subjects. Sources include open educational resources and partner institutions.
+            *   **Handwriting Samples**: Handwritten quiz responses from volunteer students, collected with proper consent, privacy protection, and diverse handwriting styles and quality levels.
+            *   **Assessment Standards**: Grading rubrics and sample answer keys from educational institutions, feedback templates.
+            **Output Data**:
+            *   PowerPoint (.pptx) slide decks.
+            *   Word (.docx) quiz documents.
+            *   Individual student reports (PDF).
+            *   Class-wide analytics reports (PDF).
+            **Data Volume**: Initial testing with 5-10 textbook chapters, 100+ handwriting samples; production to handle 500+ student assignments.
+            **Data Storage**: Pinecone for vector embeddings; Supabase + PostgreSQL for user accounts, quiz metadata, student submission details, grades, logs; Supabase Storage for binary files (PDFs, images, generated documents).
+            **Data Retention**: Student data retained only as long as educationally necessary, with automatic deletion after course completion unless explicitly retained by the institution. Clear data retention policies aligned with institutional requirements.
+            **Quality Requirements**: High-resolution PDFs (300 DPI+), clear handwriting samples with good lighting, diverse content. All data properly anonymized for privacy, especially for training handwriting models.
+        </data_requirements>
+        <security_considerations>
+            *   **Authentication & Authorization**: JWT for token-based authentication. Role-based access control (teacher, TA, student) ensures users only access permitted data and features. Multi-factor authentication required for all accounts.
+            *   **Data Encryption**: All data encrypted in transit (HTTPS/TLS 1.2+) and at rest (AES-256 for S3, EBS, RDS volumes). Student Personally Identifiable Information (PII) to receive highest protection level with field-level encryption in PostgreSQL.
+            *   **Data Privacy Compliance**: Adherence to UK GDPR and Data Protection Act 2018. ICO Children's Code compliance (parental consent for under 13, high privacy defaults for minors). Regular security audits and penetration testing.
+            *   **Prompt Injection Prevention**: Implementing best practices for sanitizing and structuring LLM inputs to mitigate prompt injection risks.
+            *   **Content Safety**: AI-generated content filtered for appropriateness; human review mechanisms for questionable material; reporting tools for inappropriate content.
+            *   **Error Handling & Review**: Low-confidence OCR results flagged for human review. Technical failures trigger automatic notifications to administrators. Audit logs for all critical operations.
+            *   **Backup & Disaster Recovery**: Multiple backup systems across different geographic regions, version control for all code/configurations.
+        </security_considerations>
+        <scalability_performance>
+            *   **Content Generation**: Target processing time under 5 minutes per chapter for slide/quiz generation.
+            *   **Quiz Grading**: Target 24-hour turnaround time for large batches, aiming for ~10 seconds per student submission.
+            *   **System Uptime**: Target 99.5% system uptime.
+            *   **Scalability**: The system will leverage AWS auto-scaling to handle varying user loads and increasing student numbers. The modular architecture (FastAPI services, distinct databases) allows for independent scaling and upgrades of components.
+            *   **Load**: Designed to handle large classes (100+ students) and potentially multiple concurrent content generation or grading tasks. Caching mechanisms will be implemented for frequently accessed content.
+            *   **Performance Monitoring**: Continuous monitoring tools will be deployed to identify and address bottlenecks proactively.
+        </scalability_performance>
+    </technical_specifications>
+
+    <success_metrics>
+        <metric>
+            <name>Efficiency: Content Creation Time Reduction</name>
+            <description>Reduce teacher slide creation time from hours to minutes per chapter.</description>
+            <target>60-70% reduction in teacher preparation time.</target>
+        </metric>
+        <metric>
+            <name>Efficiency: Quiz Grading Time Reduction</name>
+            <description>Decrease quiz grading time from 2-3 minutes per student to 10 seconds per student.</description>
+            <target>80-90% reduction in TA grading workload.</target>
+        </metric>
+        <metric>
+            <name>Efficiency: Student Feedback Turnaround</name>
+            <description>Achieve same-day feedback delivery to students instead of 7-14 day delays.</description>
+            <target>Feedback within 24 hours.</target>
+        </metric>
+        <metric>
+            <name>Quality: Teacher Satisfaction with Generated Content</name>
+            <description>Teacher satisfaction level with the quality and relevance of AI-generated content (slides, quizzes).</description>
+            <target>90%+ teacher satisfaction.</target>
+        </metric>
+        <metric>
+            <name>Quality: AI Grading Accuracy</name>
+            <description>Correlation between AI-assigned grades and human grader assessments.</description>
+            <target>85%+ correlation.</target>
+        </metric>
+        <metric>
+            <name>Quality: Handwriting Recognition Accuracy</name>
+            <description>Accuracy of Optical Character Recognition (OCR) for handwritten student responses.</description>
+            <target>95%+ character accuracy.</target>
+        </metric>
+        <metric>
+            <name>System Reliability</name>
+            <description>System uptime for core functionalities.</description>
+            <target>99.5% system uptime.</target>
+        </metric>
+        <metric>
+            <name>User Adoption Rate</name>
+            <description>Percentage of pilot teachers actively using the system post-beta deployment.</description>
+            <target>80% of pilot teachers actively using the system.</target>
+        </metric>
+    </success_metrics>
+
+    <assumptions_constraints>
+        <assumption>
+            Python 3.9+ will be the target development version, compatible with all specified libraries and frameworks.
+        </assumption>
+        <assumption>
+            The project assumes continued availability and stability of third-party LLM (OpenAI, Anthropic) and OCR (MistralOCR) APIs, with API rate limits and costs being manageable within the project budget.
+        </assumption>
+        <assumption>
+            Frontend development will utilize common React ecosystem libraries like Redux for state management and Axios for API calls to ensure efficient development.
+        </assumption>
+        <assumption>
+            Image preprocessing techniques for OCR (e.g., binarization, de-skewing, noise reduction) will significantly improve the accuracy of handwriting recognition on diverse student samples.
+        </assumption>
+        <assumption>
+            The ethical guidelines concerning AI fairness in grading (e.g., bias testing with diverse handwriting) will be an integral part of the development and testing process.
+        </assumption>
+        <assumption>
+            Student consent for data usage (especially handwriting samples) will be properly obtained and managed according to privacy regulations.
+        </assumption>
+        <constraint>
+            Initial project timeline is constrained to 12 months, with key deliverables planned in 3-week Agile sprints.
+        </constraint>
+        <constraint>
+            The system's initial deployment will be exclusively on Amazon Web Services (AWS).
+        </constraint>
+        <constraint>
+            The project's primary focus and testing are oriented towards UK higher education standards and regulations.
+        </constraint>
+        <constraint>
+            The quality of AI-generated content and grading accuracy is heavily reliant on the performance and capabilities of the chosen LLMs and proper prompt engineering.
+        </constraint>
+        <constraint>
+            Human review is explicitly required for unclear OCR results and teacher approval for final grades, meaning the system is an assistant, not a fully autonomous replacement for human judgment.
+        </constraint>
+    </assumptions_constraints>
+
+    <future_considerations>
+        <consideration>
+            **Learning Management System (LMS) Integration**: Integrate directly with popular LMS platforms (e.g., Google Classroom, Moodle, Blackboard) for seamless content push and grade synchronization.
+        </consideration>
+        <consideration>
+            **Support for Additional Content Types**: Expand content processing to include other educational materials like video transcripts, audio lectures, and interactive simulations.
+        </consideration>
+        <consideration>
+            **Adaptive Learning Paths**: Develop features that analyze student performance data to suggest personalized learning paths or remedial materials.
+        </consideration>
+        <consideration>
+            **Proactive Content Recommendations**: Implement AI that suggests relevant content creation ideas or quiz topics to teachers based on curriculum trends or student performance.
+        </consideration>
+        <consideration>
+            **Multilingual Support**: Extend content generation and grading capabilities to support multiple languages beyond English.
+        </consideration>
+        <consideration>
+            **Advanced Analytics & Predictive Models**: Incorporate more sophisticated analytics to predict student at-risk status or identify curriculum gaps based on aggregated data.
+        </consideration>
+        <consideration>
+            **User-Customizable AI Models**: Allow institutions or expert users to fine-tune AI models for specific subject areas or pedagogical approaches.
+        </consideration>
+        <consideration>
+            **Peer-to-Peer Learning Features**: Integrate tools for students to review each other's work with AI-assisted guidance.
+        </consideration>
+    </future_considerations>
+</product_requirements_document>
