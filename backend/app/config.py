@@ -1,7 +1,11 @@
 from functools import lru_cache
 from typing import List, Optional, Union
 
-from pydantic import AnyHttpUrl, BaseSettings, validator
+from pydantic import AnyHttpUrl, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -12,24 +16,24 @@ class Settings(BaseSettings):
     environment: str = "development"
     
     # API keys
-    openai_api_key: str
-    pinecone_api_key: str
-    pinecone_environment: str
-    pinecone_index: str
-    supabase_url: str
-    supabase_key: str
+    openai_api_key: str = "your_openai_api_key"
+    pinecone_api_key: str = "your_pinecone_api_key"
+    pinecone_environment: str = "your_pinecone_environment"
+    pinecone_index: str = "your_pinecone_index_name"
+    supabase_url: str = "your_supabase_url"
+    supabase_key: str = "your_supabase_key"
     mistralocr_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
     
     # Authentication
-    jwt_secret_key: str
+    jwt_secret_key: str = "test_secret_key_for_development"
     jwt_algorithm: str = "HS256"
     jwt_expiration_minutes: int = 60
     
     # CORS
     backend_cors_origins: Union[List[str], List[AnyHttpUrl]] = ["http://localhost:3000", "http://localhost:8000"]
 
-    @validator("backend_cors_origins", pre=True)
+    @field_validator("backend_cors_origins", mode='before')
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
         """Parse CORS origins from string or list."""
         if isinstance(v, str) and not v.startswith("["):
@@ -45,10 +49,12 @@ class Settings(BaseSettings):
     smtp_password: Optional[str] = None
     email_from: Optional[str] = None
     
-    class Config:
-        """Pydantic config."""
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        env_prefix="",
+        extra="allow"
+    )
 
 
 @lru_cache()

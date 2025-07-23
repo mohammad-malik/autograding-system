@@ -41,24 +41,25 @@ async def register(user_in: UserCreate, db: Session = Depends(get_db)) -> Any:
     db.commit()
     db.refresh(db_user)
 
-    # Create user in Supabase
-    try:
-        supabase.auth.admin.create_user({
-            "email": user_in.email,
-            "password": user_in.password,
-            "user_metadata": {
-                "full_name": user_in.full_name,
-                "role": user_in.role,
-            }
-        })
-    except Exception as e:
-        # If Supabase user creation fails, rollback the database transaction
-        db.delete(db_user)
-        db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create user in Supabase: {str(e)}",
-        )
+    # Create user in Supabase if available
+    if supabase:
+        try:
+            supabase.auth.admin.create_user({
+                "email": user_in.email,
+                "password": user_in.password,
+                "user_metadata": {
+                    "full_name": user_in.full_name,
+                    "role": user_in.role,
+                }
+            })
+        except Exception as e:
+            # If Supabase user creation fails, rollback the database transaction
+            db.delete(db_user)
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to create user in Supabase: {str(e)}",
+            )
 
     return db_user
 

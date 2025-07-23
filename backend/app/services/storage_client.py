@@ -2,6 +2,9 @@ import os
 import uuid
 from typing import BinaryIO, Optional, Tuple
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from ..config import get_settings
 from ..models.database_utils import supabase
 

@@ -3,3 +3,6 @@
 .vscode/
 notebooks/*.pdf
 example-pdfs/
+__pycache__/
+sample_quiz.pdf
+sample_content.txt

@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, Tuple, Any
+from typing import Tuple
 
 from fastapi import UploadFile
 

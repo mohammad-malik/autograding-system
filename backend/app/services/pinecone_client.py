@@ -3,6 +3,9 @@ from typing import Dict, List, Optional, Tuple, Any
 
 import pinecone
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from ..config import get_settings
 from .llm_client import LLMClient

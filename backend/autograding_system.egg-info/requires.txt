@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+python-dotenv
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+sqlalchemy
+supabase
+pinecone
+mistralai
+openai
+anthropic
+langchain-text-splitters
+pydantic
+pydantic-settings
+email-validator
+PyMuPDF
