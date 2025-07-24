@@ -2,9 +2,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from supabase import create_client
-from dotenv import load_dotenv
+# from dotenv import load_dotenv  # redundant
 
-load_dotenv()
+# load_dotenv()  # redundant
 
 from ..config import get_settings
 
@@ -16,7 +16,7 @@ supabase = create_client(
 
 # SQLAlchemy setup
 # For local development, you can use SQLite
-SQLALCHEMY_DATABASE_URL = "sqlite:///./app.db"
+SQLALCHEMY_DATABASE_URL = get_settings().sqlalchemy_database_url
 # In production, you would use the Supabase PostgreSQL connection
 # SQLALCHEMY_DATABASE_URL = f"postgresql://{username}:{password}@{host}:{port}/{database}"
 

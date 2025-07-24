@@ -13,7 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 import uvicorn
-from dotenv import load_dotenv
+# from dotenv import load_dotenv  # redundant, removed
 
 from backend.app.config import get_settings
 from backend.app.auth import router as auth_router
@@ -25,7 +25,7 @@ from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-load_dotenv()
+# load_dotenv()  # redundant
 
 # ----------------------------------------------------------------------------
 # FastAPI application

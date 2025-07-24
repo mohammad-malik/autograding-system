@@ -2,8 +2,8 @@ import os
 import uuid
 from typing import BinaryIO, Optional, Tuple
 
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv  # redundant
+# load_dotenv()  # redundant
 
 from ..config import get_settings
 from ..models.database_utils import supabase
@@ -12,11 +12,11 @@ from ..models.database_utils import supabase
 class StorageClient:
     """Client for file storage operations."""
 
-    BUCKET_TEXTBOOKS = "textbooks"
-    BUCKET_QUIZZES = "quizzes"
-    BUCKET_SUBMISSIONS = "submissions"
-    BUCKET_REPORTS = "reports"
-    BUCKET_SLIDES = "slides"
+    BUCKET_TEXTBOOKS = get_settings().bucket_textbooks
+    BUCKET_QUIZZES = get_settings().bucket_quizzes
+    BUCKET_SUBMISSIONS = get_settings().bucket_submissions
+    BUCKET_REPORTS = get_settings().bucket_reports
+    BUCKET_SLIDES = get_settings().bucket_slides
 
     @staticmethod
     async def init_storage():

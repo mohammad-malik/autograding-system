@@ -11,9 +11,9 @@ from typing import Dict, List, Optional, Tuple, Any
 from pinecone import Pinecone, ServerlessSpec
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from dotenv import load_dotenv
+# from dotenv import load_dotenv  # redundant, config handles env vars
 
-load_dotenv()
+# load_dotenv()  # redundant
 
 from ..config import get_settings
 from .llm_client import LLMClient

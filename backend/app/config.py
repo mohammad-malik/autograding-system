@@ -17,13 +17,22 @@ class Settings(BaseSettings):
     
     # API keys
     openai_api_key: str = os.getenv("OPENAI_API_KEY")
+    anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY")
+    
     pinecone_api_key: str = os.getenv("PINECONE_API_KEY")
     pinecone_environment: str = os.getenv("PINECONE_ENVIRONMENT")
     pinecone_index: str = os.getenv("PINECONE_INDEX")
-    supabase_url: str = "https://ppffqhdtvrshcuggjtat.supabase.co"
+    
+    mistralocr_api_key: str = os.getenv("MISTRALOCR_API_KEY")
+    sqlalchemy_database_url: str = os.getenv("SQLALCHEMY_DATABASE_URL")
+    
+    supabase_url: str = os.getenv("SUPABASE_URL")
     supabase_key: str = os.getenv("SUPABASE_KEY")
-    mistralocr_api_key: Optional[str] = None
-    anthropic_api_key: Optional[str] = None
+    bucket_textbooks: str = os.getenv("BUCKET_TEXTBOOKS")
+    bucket_quizzes: str = os.getenv("BUCKET_QUIZZES")
+    bucket_submissions: str = os.getenv("BUCKET_SUBMISSIONS")
+    bucket_reports: str = os.getenv("BUCKET_REPORTS")
+    bucket_slides: str = os.getenv("BUCKET_SLIDES")
     
     # Authentication
     jwt_secret_key: str = os.getenv("JWT_SECRET_KEY")

@@ -4,9 +4,9 @@ from typing import Dict, Tuple, Optional, Any
 from mistralai import Mistral, DocumentURLChunk
 from pathlib import Path
 import tempfile
-from dotenv import load_dotenv
+# from dotenv import load_dotenv  # redundant
 
-load_dotenv()
+# load_dotenv()  # redundant
 
 from ..config import get_settings
 

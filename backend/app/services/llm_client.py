@@ -4,9 +4,9 @@ from typing import Dict, List, Optional, Union, Any
 import openai
 import anthropic
 from openai.types.chat import ChatCompletion
-from dotenv import load_dotenv
+# from dotenv import load_dotenv  # redundant
 
-load_dotenv()
+# load_dotenv()  # redundant
 
 from ..config import get_settings
 
