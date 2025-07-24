@@ -1,7 +1,15 @@
 import json
 from typing import Dict, List, Optional, Tuple, Any
 
-import pinecone
+# -----------------------------------------------------------------------------
+# Pinecone Python SDK v3+ (>=2024-xx) no longer exposes a top-level `init` or
+# global helpers.  Instead, you create a `Pinecone` client instance and work
+# with that.  Importing the class is therefore required **before** any calls
+# to list / create / open indexes.
+# -----------------------------------------------------------------------------
+
+from pinecone import Pinecone, ServerlessSpec
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from dotenv import load_dotenv
 
@@ -10,11 +18,18 @@ load_dotenv()
 from ..config import get_settings
 from .llm_client import LLMClient
 
-# Initialize Pinecone
-pinecone.init(
-    api_key=get_settings().pinecone_api_key,
-    environment=get_settings().pinecone_environment,
-)
+# -----------------------------------------------------------------------------
+# Create a *singleton* Pinecone client so that subsequent calls reuse the
+# underlying HTTP session / connection-pool.  We keep the object at module
+# level because this file is imported once per interpreter process.
+# -----------------------------------------------------------------------------
+
+_pc = Pinecone(api_key=get_settings().pinecone_api_key)
+
+# Optional: if you are still using pod-based indexes or want to specify an
+# environment explicitly you can pass `environment=...` when instantiating the
+# client.  The serverless flow no longer requires this because the API key is
+# already scoped to a project/region.
 
 
 class PineconeClient:
@@ -24,13 +39,20 @@ class PineconeClient:
     def get_index():
         """Get Pinecone index."""
         index_name = get_settings().pinecone_index
-        if index_name not in pinecone.list_indexes():
-            pinecone.create_index(
+        # ------------------------------------------------------------------
+        # The new SDK returns a rich object from list_indexes().  We can use
+        # the `.names` convenience property for a flat list of names.
+        # ------------------------------------------------------------------
+        if index_name not in _pc.list_indexes().names:
+            # Default to an AWS us-east-1 serverless spec if none supplied.
+            # You can control this via env vars PINECONE_CLOUD / REGION later.
+            _pc.create_index(
                 name=index_name,
                 dimension=1536,  # OpenAI embedding dimension
                 metric="cosine",
+                spec=ServerlessSpec(cloud="aws", region="us-east-1"),
             )
-        return pinecone.Index(index_name)
+        return _pc.Index(index_name)
 
     @staticmethod
     async def chunk_text(text: str) -> List[str]:

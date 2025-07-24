@@ -1,10 +1,10 @@
+import os
 from functools import lru_cache
 from typing import List, Optional, Union
 
 from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
-
 load_dotenv()
 
 
@@ -16,17 +16,17 @@ class Settings(BaseSettings):
     environment: str = "development"
     
     # API keys
-    openai_api_key: str = "your_openai_api_key"
-    pinecone_api_key: str = "your_pinecone_api_key"
-    pinecone_environment: str = "your_pinecone_environment"
-    pinecone_index: str = "your_pinecone_index_name"
-    supabase_url: str = "your_supabase_url"
-    supabase_key: str = "your_supabase_key"
+    openai_api_key: str = os.getenv("OPENAI_API_KEY")
+    pinecone_api_key: str = os.getenv("PINECONE_API_KEY")
+    pinecone_environment: str = os.getenv("PINECONE_ENVIRONMENT")
+    pinecone_index: str = os.getenv("PINECONE_INDEX")
+    supabase_url: str = "https://ppffqhdtvrshcuggjtat.supabase.co"
+    supabase_key: str = os.getenv("SUPABASE_KEY")
     mistralocr_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
     
     # Authentication
-    jwt_secret_key: str = "test_secret_key_for_development"
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY")
     jwt_algorithm: str = "HS256"
     jwt_expiration_minutes: int = 60
     

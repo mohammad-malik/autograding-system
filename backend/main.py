@@ -7,6 +7,11 @@ or simply:
 
 from pathlib import Path
 import sys
+# Ensure project root is in PYTHONPATH
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 import uvicorn
 from dotenv import load_dotenv
 
@@ -19,11 +24,6 @@ from backend.app.reports import router as reports_router
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
-# Ensure project root is in PYTHONPATH
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 load_dotenv()
 
