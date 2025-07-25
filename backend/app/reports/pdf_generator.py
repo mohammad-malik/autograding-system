@@ -2,13 +2,10 @@ import io
 from typing import Dict, List, Optional, Tuple, Any
 
 from fpdf import FPDF
-import pandas as pd
-from sqlalchemy.orm import Session
 
-from ..models import (
-    Quiz, QuizSubmission, StudentAnswer, Question, User, TaskStatus
-)
 from ..services import StorageClient
+from ..models import TaskStatus
+from ..models.supabase_client import table, get_by_id
 
 
 class ReportPDF(FPDF):
@@ -32,30 +29,32 @@ class PDFGenerator:
 
     @staticmethod
     async def generate_student_report(
-        submission_id: str, db: Session, user_id: str
+        submission_id: str, user_id: str
     ) -> Tuple[str, str]:
         """Generate student report PDF."""
         # Get submission
-        submission = db.query(QuizSubmission).filter(
-            QuizSubmission.id == submission_id
-        ).first()
+        submission = get_by_id("submissions", submission_id)
         if not submission:
             raise ValueError(f"Submission {submission_id} not found")
         
         # Get quiz
-        quiz = db.query(Quiz).filter(Quiz.id == submission.quiz_id).first()
+        quiz = get_by_id("quizzes", submission["quiz_id"])
         if not quiz:
             raise ValueError(f"Quiz {submission.quiz_id} not found")
         
         # Get student
-        student = db.query(User).filter(User.id == submission.student_id).first()
+        student = get_by_id("profiles", submission["student_user_id"])
         if not student:
             raise ValueError(f"Student {submission.student_id} not found")
         
         # Get answers
-        answers = db.query(StudentAnswer).filter(
-            StudentAnswer.submission_id == submission_id
-        ).all()
+        answers = (
+            table("grades")
+            .select("*")
+            .eq("submission_id", submission_id)
+            .execute()
+            .data
+        )
         
         # Create PDF
         pdf = ReportPDF()
@@ -80,24 +79,24 @@ class PDFGenerator:
         
         for answer in answers:
             # Get question
-            question = db.query(Question).filter(Question.id == answer.question_id).first()
+            question = get_by_id("quiz_questions", answer["question_id"])
             if not question:
                 continue
             
             pdf.set_font("Arial", "B", 12)
-            pdf.multi_cell(0, 10, f"Question: {question.text}")
+            pdf.multi_cell(0, 10, f"Question: {question['question_text']}")
             pdf.ln(2)
             
             pdf.set_font("Arial", "", 10)
-            pdf.multi_cell(0, 10, f"Your Answer: {answer.answer_text}")
+            pdf.multi_cell(0, 10, f"Your Answer: {answer['answer_text'] if 'answer_text' in answer else ''}")
             pdf.ln(2)
             
             pdf.set_font("Arial", "B", 10)
-            pdf.multi_cell(0, 10, f"Score: {answer.score:.1f}%")
+            pdf.multi_cell(0, 10, f"Score: {answer['assigned_score']:.1f}%")
             pdf.ln(2)
             
             pdf.set_font("Arial", "I", 10)
-            pdf.multi_cell(0, 10, f"Feedback: {answer.feedback}")
+            pdf.multi_cell(0, 10, f"Feedback: {answer.get('llm_feedback', '')}")
             pdf.ln(5)
         
         # Save PDF to memory
@@ -117,22 +116,32 @@ class PDFGenerator:
 
     @staticmethod
     async def generate_class_summary(
-        quiz_id: str, db: Session, user_id: str
+        quiz_id: str, user_id: str
     ) -> Tuple[str, str]:
         """Generate class summary PDF."""
         # Get quiz
-        quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+        quiz = get_by_id("quizzes", quiz_id)
         if not quiz:
             raise ValueError(f"Quiz {quiz_id} not found")
         
         # Get all submissions
-        submissions = db.query(QuizSubmission).filter(
-            QuizSubmission.quiz_id == quiz_id,
-            QuizSubmission.grade_status == TaskStatus.COMPLETED,
-        ).all()
+        submissions = (
+            table("submissions")
+            .select("*")
+            .eq("quiz_id", quiz_id)
+            .eq("status", TaskStatus.COMPLETED)
+            .execute()
+            .data
+        )
         
         # Get all questions
-        questions = db.query(Question).filter(Question.quiz_id == quiz_id).all()
+        questions = (
+            table("quiz_questions")
+            .select("*")
+            .eq("quiz_id", quiz_id)
+            .execute()
+            .data
+        )
         
         # Create PDF
         pdf = ReportPDF()
@@ -171,26 +180,30 @@ class PDFGenerator:
             
             for question in questions:
                 # Get all answers for this question
-                answers = db.query(StudentAnswer).filter(
-                    StudentAnswer.question_id == question.id
-                ).all()
+                answers = (
+                    table("grades")
+                    .select("*")
+                    .eq("question_id", question["id"])
+                    .execute()
+                    .data
+                )
                 
                 if not answers:
                     continue
                 
                 # Calculate statistics
-                scores = [a.score for a in answers if a.score is not None]
+                scores = [a["assigned_score"] for a in answers if a["assigned_score"] is not None]
                 avg_score = sum(scores) / len(scores) if scores else 0
                 
                 pdf.set_font("Arial", "B", 12)
-                pdf.multi_cell(0, 10, f"Question: {question.text}")
+                pdf.multi_cell(0, 10, f"Question: {question['question_text']}")
                 pdf.ln(2)
                 
                 pdf.set_font("Arial", "", 10)
                 pdf.cell(0, 10, f"Average Score: {avg_score:.1f}%", 0, 1)
                 
                 # Identify common issues (simplified approach)
-                low_scores = [a for a in answers if a.score is not None and a.score < 50]
+                low_scores = [a for a in answers if a["assigned_score"] is not None and a["assigned_score"] < 50]
                 if low_scores:
                     pdf.multi_cell(0, 10, f"Note: {len(low_scores)} students scored below 50% on this question.")
                 

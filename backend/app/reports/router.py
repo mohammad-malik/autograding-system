@@ -1,11 +1,10 @@
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 
 from ..auth import get_current_student, get_current_ta, get_current_teacher
-from ..models import User, QuizSubmission, Quiz, ClassSummary, ReportResponse
-from ..models.database_utils import get_db
+from ..models import User, ClassSummary, ReportResponse
+from ..models.supabase_client import table, get_by_id
 from .pdf_generator import PDFGenerator
 
 router = APIRouter()
@@ -15,13 +14,10 @@ router = APIRouter()
 async def get_student_report(
     submission_id: str,
     current_user: User = Depends(get_current_student),
-    db: Session = Depends(get_db),
 ) -> Any:
     """Get student report for a specific submission."""
     # Check if submission exists
-    submission = db.query(QuizSubmission).filter(
-        QuizSubmission.id == submission_id
-    ).first()
+    submission = get_by_id("submissions", submission_id)
     if not submission:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -29,7 +25,7 @@ async def get_student_report(
         )
     
     # Check if user has permission
-    if current_user.role == "student" and current_user.id != submission.student_id:
+    if current_user.role == "student" and current_user.id != submission["student_user_id"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
@@ -38,7 +34,7 @@ async def get_student_report(
     # Generate report
     try:
         _, file_url = await PDFGenerator.generate_student_report(
-            submission_id, db, current_user.id
+            submission_id, current_user.id
         )
     except Exception as e:
         raise HTTPException(
@@ -56,11 +52,10 @@ async def get_student_report(
 async def get_class_summary(
     quiz_id: str,
     current_user: User = Depends(get_current_ta),
-    db: Session = Depends(get_db),
 ) -> Any:
     """Get class summary for a specific quiz."""
     # Check if quiz exists
-    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    quiz = get_by_id("quizzes", quiz_id)
     if not quiz:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -70,7 +65,7 @@ async def get_class_summary(
     # Generate report
     try:
         _, file_url = await PDFGenerator.generate_class_summary(
-            quiz_id, db, current_user.id
+            quiz_id, current_user.id
         )
     except Exception as e:
         raise HTTPException(
@@ -79,12 +74,16 @@ async def get_class_summary(
         )
     
     # Get submissions
-    submissions = db.query(QuizSubmission).filter(
-        QuizSubmission.quiz_id == quiz_id
-    ).all()
+    submissions = (
+        table("submissions")
+        .select("*")
+        .eq("quiz_id", quiz_id)
+        .execute()
+        .data
+    )
     
     # Calculate statistics
-    scores = [s.score for s in submissions if s.score is not None]
+    scores = [s["score"] for s in submissions if s["score"] is not None]
     avg_score = sum(scores) / len(scores) if scores else 0
     
     # Simplified common mistakes (in a real app, this would be more sophisticated)
@@ -101,7 +100,7 @@ async def get_class_summary(
     }
     
     return {
-        "quiz_name": quiz.title,
+        "quiz_name": quiz["title"],
         "avg_score": avg_score,
         "common_mistakes": common_mistakes,
         "performance_trends": performance_trends,

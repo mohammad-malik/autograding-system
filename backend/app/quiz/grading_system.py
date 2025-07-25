@@ -1,11 +1,8 @@
 import json
 from typing import Dict, List, Optional, Tuple, Any
 
-from sqlalchemy.orm import Session
-
-from ..models import (
-    QuizSubmission, Question, AnswerKey, StudentAnswer, TaskStatus
-)
+from ..models import TaskStatus
+from ..models.supabase_client import table, get_by_id, insert, update_by_id
 from ..services import LLMClient
 
 
@@ -14,30 +11,36 @@ class GradingSystem:
 
     @staticmethod
     async def grade_submission(
-        submission_id: str, db: Session
-    ) -> Tuple[QuizSubmission, List[StudentAnswer]]:
+        submission_id: str,
+    ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         """Grade quiz submission."""
         # Get submission
-        submission = db.query(QuizSubmission).filter(
-            QuizSubmission.id == submission_id
-        ).first()
+        submission = get_by_id("submissions", submission_id)
         if not submission:
             raise ValueError(f"Submission {submission_id} not found")
         
         # Check if OCR was successful
-        if submission.ocr_status != TaskStatus.COMPLETED:
-            submission.grade_status = TaskStatus.FAILED
-            db.commit()
+        if submission["status"] != TaskStatus.COMPLETED:
+            update_by_id("submissions", submission_id, {"status": TaskStatus.FAILED})
             return submission, []
         
         # Get quiz questions
-        questions = db.query(Question).filter(
-            Question.quiz_id == submission.quiz_id
-        ).all()
+        questions = (
+            table("quiz_questions")
+            .select("*")
+            .eq("quiz_id", submission["quiz_id"])
+            .execute()
+            .data
+        )
         if not questions:
-            submission.grade_status = TaskStatus.FAILED
-            submission.feedback = "No questions found for this quiz"
-            db.commit()
+            update_by_id(
+                "submissions",
+                submission_id,
+                {
+                    "status": TaskStatus.FAILED,
+                    "llm_feedback": "No questions found for this quiz",
+                },
+            )
             return submission, []
         
         # Parse OCR text to extract answers
@@ -79,35 +82,40 @@ class GradingSystem:
         
         for i, question in enumerate(questions):
             # Get answer key
-            answer_key = db.query(AnswerKey).filter(
-                AnswerKey.question_id == question.id
-            ).first()
-            if not answer_key:
+            answer_key_row = (
+                table("answer_key_details")
+                .select("*")
+                .eq("question_id", question["id"])
+                .single()
+                .execute()
+                .data
+            )
+            if not answer_key_row:
                 continue
             
             # Get student answer
             student_answer_text = answers.get(i + 1, "")
             
             # Grade answer
-            keywords = json.loads(answer_key.keywords) if answer_key.keywords else None
+            keywords = answer_key_row.get("keywords")
             grade_result = await LLMClient.grade_submission(
                 student_answer_text,
-                question.text,
-                answer_key.correct_answer,
+                question["question_text"],
+                answer_key_row["correct_text_or_choice"],
                 keywords,
             )
             
             # Create student answer record
-            student_answer = StudentAnswer(
-                id=f"{submission_id}_{question.id}",
-                submission_id=submission_id,
-                question_id=question.id,
-                answer_text=student_answer_text,
-                score=grade_result["score"],
-                feedback=grade_result["feedback"],
+            answer_record = insert(
+                "grades",
+                {
+                    "submission_id": submission_id,
+                    "question_id": question["id"],
+                    "assigned_score": grade_result["score"],
+                    "llm_feedback": grade_result["feedback"],
+                },
             )
-            student_answers.append(student_answer)
-            db.add(student_answer)
+            student_answers.append(answer_record)
             
             # Add to total score
             total_score += grade_result["score"]
@@ -116,11 +124,16 @@ class GradingSystem:
         avg_score = total_score / total_questions if total_questions > 0 else 0
         
         # Update submission
-        submission.score = avg_score
-        submission.grade_status = TaskStatus.COMPLETED
-        submission.feedback = f"Overall score: {avg_score:.1f}%. See detailed feedback for each question."
+        update_by_id(
+            "submissions",
+            submission_id,
+            {
+                "score": avg_score,
+                "status": TaskStatus.COMPLETED,
+                "llm_feedback": f"Overall score: {avg_score:.1f}%.",
+            },
+        )
         
-        # Commit changes
-        db.commit()
-        
+        submission["score"] = avg_score
+        submission["status"] = TaskStatus.COMPLETED
         return submission, student_answers 

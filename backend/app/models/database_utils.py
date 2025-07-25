@@ -8,34 +8,28 @@ from supabase import create_client
 
 from ..config import get_settings
 
-# Create Supabase client
-supabase = create_client(
-    get_settings().supabase_url,
-    get_settings().supabase_key
-)
+# Deprecated SQLAlchemy utilities have been removed; this module now only
+# serves to expose the Supabase client instance used throughout the code base.
 
-# SQLAlchemy setup
-# For local development, you can use SQLite
-SQLALCHEMY_DATABASE_URL = get_settings().sqlalchemy_database_url
-# In production, you would use the Supabase PostgreSQL connection
-# SQLALCHEMY_DATABASE_URL = f"postgresql://{username}:{password}@{host}:{port}/{database}"
+supabase = create_client(get_settings().supabase_url, get_settings().supabase_key)
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Backward-compatibility shims -------------------------------------------------
+# In places where the old code imported `get_db` for dependency injection we
+# will gradually migrate, but for now we keep a dummy generator so FastAPI
+# doesn’t crash even if a route still depends on it.  It yields the supabase
+# client instead of a SQLAlchemy session.
 
 
 def get_db():
-    """Get database session."""
-    db = SessionLocal()
+    """Temporary shim that yields the Supabase client object."""
     try:
-        yield db
+        yield supabase
     finally:
-        db.close()
+        pass
+
+
+# init_db is no longer needed; kept as a no-op for compatibility
 
 
 def init_db():
-    """Initialize database."""
-    from .database import Base
-    Base.metadata.create_all(bind=engine) 
+    return None 

@@ -2,14 +2,13 @@ import uuid
 from typing import Any, List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from sqlalchemy.orm import Session
 
 from ..auth import get_current_teacher
 from ..models import (
-    User, Textbook, TextbookCreate, TextbookSchema, SlideGenerationRequest,
-    QuizGenerationRequest, TaskResponse, TaskStatus, Quiz, QuestionType, Difficulty
+    User, TextbookCreate, TextbookSchema, SlideGenerationRequest,
+    QuizGenerationRequest, TaskResponse, TaskStatus, Difficulty
 )
-from ..models.database_utils import get_db
+from ..models.supabase_client import insert, table, get_by_id
 from .pdf_processor import PDFProcessor
 from .content_generator import ContentGenerator
 
@@ -23,7 +22,6 @@ async def upload_textbook(
     description: str = Form(None),
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_teacher),
-    db: Session = Depends(get_db),
 ) -> Any:
     """Upload textbook PDF for processing and indexing."""
     # Validate file type
@@ -45,23 +43,31 @@ async def upload_textbook(
         file, textbook_data, current_user.id
     )
 
-    # Save textbook to database
-    db.add(textbook)
-    db.commit()
-    db.refresh(textbook)
+    # Save textbook to Supabase
+    saved = insert(
+        "books",
+        {
+            "id": textbook.id,
+            "title": textbook.title,
+            "author": textbook.author,
+            "description": textbook.description,
+            "file_path": textbook.file_path,
+            "uploaded_by_user_id": current_user.id,
+            "status": "pending_processing",
+        },
+    )
 
-    return textbook
+    return saved
 
 
 @router.post("/generate_slides", response_model=TaskResponse)
 async def generate_slides(
     request: SlideGenerationRequest,
     current_user: User = Depends(get_current_teacher),
-    db: Session = Depends(get_db),
 ) -> Any:
     """Generate PowerPoint slides from textbook content."""
     # Check if textbook exists
-    textbook = db.query(Textbook).filter(Textbook.id == request.book_id).first()
+    textbook = get_by_id("books", request.book_id)
     if not textbook:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -88,11 +94,10 @@ async def generate_slides(
 async def generate_quiz(
     request: QuizGenerationRequest,
     current_user: User = Depends(get_current_teacher),
-    db: Session = Depends(get_db),
 ) -> Any:
     """Generate quiz document from textbook content."""
     # Check if textbook exists
-    textbook = db.query(Textbook).filter(Textbook.id == request.book_id).first()
+    textbook = get_by_id("books", request.book_id)
     if not textbook:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -111,9 +116,19 @@ async def generate_quiz(
         current_user.id,
     )
 
-    # Save quiz to database
-    db.add(quiz)
-    db.commit()
+    insert(
+        "quizzes",
+        {
+            "id": quiz.id,
+            "title": quiz.title,
+            "description": quiz.description,
+            "file_path": quiz.file_path,
+            "textbook_id": quiz.textbook_id,
+            "created_by_user_id": current_user.id,
+            "difficulty": quiz.difficulty,
+            "status": "draft",
+        },
+    )
 
     return {
         "task_id": task_id,
@@ -126,8 +141,13 @@ async def generate_quiz(
 @router.get("/textbooks", response_model=List[TextbookSchema])
 async def get_textbooks(
     current_user: User = Depends(get_current_teacher),
-    db: Session = Depends(get_db),
 ) -> Any:
     """Get all textbooks for the current user."""
-    textbooks = db.query(Textbook).filter(Textbook.created_by == current_user.id).all()
+    textbooks = (
+        table("books")
+        .select("*")
+        .eq("uploaded_by_user_id", current_user.id)
+        .execute()
+        .data
+    )
     return textbooks 

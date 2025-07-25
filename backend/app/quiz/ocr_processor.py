@@ -3,7 +3,8 @@ from typing import Tuple
 
 from fastapi import UploadFile
 
-from ..models import QuizSubmission, TaskStatus
+from ..models import TaskStatus
+from types import SimpleNamespace
 from ..services import OCRClient, StorageClient
 
 
@@ -16,7 +17,7 @@ class OCRProcessor:
     @staticmethod
     async def process_submission_pdf(
         file: UploadFile, quiz_id: str, student_id: str
-    ) -> Tuple[QuizSubmission, bool]:
+    ) -> Tuple[dict, bool]:
         """Process submission PDF."""
         # Check file type
         if not file.filename.lower().endswith('.pdf'):
@@ -39,18 +40,16 @@ class OCRProcessor:
             confidence = 0.0
             ocr_status = TaskStatus.FAILED
         
-        # Create submission record
         submission_id = str(uuid.uuid4())
-        submission = QuizSubmission(
-            id=submission_id,
-            quiz_id=quiz_id,
-            student_id=student_id,
-            file_path=file_path,
-            ocr_status=ocr_status,
-            ocr_text=text,
-            ocr_confidence=confidence,
-            grade_status=TaskStatus.PENDING,
-        )
+        submission = {
+            "id": submission_id,
+            "quiz_id": quiz_id,
+            "student_user_id": student_id,
+            "image_storage_url": file_path,
+            "ocr_text_content": text,
+            "ocr_confidence_score": confidence,
+            "status": ocr_status,
+        }
         
         # Check if confidence is below threshold
         needs_review = confidence < OCRProcessor.CONFIDENCE_THRESHOLD

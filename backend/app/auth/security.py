@@ -5,11 +5,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
+from types import SimpleNamespace
 
 from ..config import get_settings
-from ..models import User, UserRole, TokenPayload
-from ..models.database_utils import get_db
+from ..models import UserRole, TokenPayload
+from ..models.supabase_client import get_by_id
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -46,7 +46,7 @@ def create_access_token(
 
 
 def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
+    token: str = Depends(oauth2_scheme)
 ) -> User:
     """Get current user from token."""
     credentials_exception = HTTPException(
@@ -66,9 +66,12 @@ def get_current_user(
         token_data = TokenPayload(**payload)
     except JWTError:
         raise credentials_exception
-    user = db.query(User).filter(User.id == token_data.sub).first()
-    if user is None:
+    user_data = get_by_id("profiles", user_id)
+    if user_data is None:
         raise credentials_exception
+
+    # Wrap dict in SimpleNamespace for attribute access compatibility
+    user = SimpleNamespace(**user_data)
     return user
 
 
@@ -77,7 +80,7 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
     return current_user
 
 
-def get_current_teacher(current_user: User = Depends(get_current_user)) -> User:
+def get_current_teacher(current_user = Depends(get_current_user)):
     """Get current teacher user."""
     if current_user.role != UserRole.TEACHER:
         raise HTTPException(
@@ -87,7 +90,7 @@ def get_current_teacher(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
-def get_current_ta(current_user: User = Depends(get_current_user)) -> User:
+def get_current_ta(current_user = Depends(get_current_user)):
     """Get current TA user."""
     if current_user.role not in [UserRole.TA, UserRole.TEACHER]:
         raise HTTPException(
@@ -97,7 +100,7 @@ def get_current_ta(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
-def get_current_student(current_user: User = Depends(get_current_user)) -> User:
+def get_current_student(current_user = Depends(get_current_user)):
     """Get current student user."""
     if current_user.role != UserRole.STUDENT:
         raise HTTPException(
